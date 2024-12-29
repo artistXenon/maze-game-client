@@ -1,6 +1,9 @@
-
 export class HttpClient {
+    private static readonly instance: HttpClient = new HttpClient();
+
     public static readonly HOST = `http://creative.jaewon.pro:9882`;
+
+    public static get get() { return HttpClient.instance; }
     
     public async registerClient() {
         const res = await fetch(HttpClient.HOST + `/hi`);

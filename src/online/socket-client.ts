@@ -1,54 +1,48 @@
-import { getGameScene } from "../scenes/game-scene";
-import { Room } from "../states/room";
-import { ClientManager } from "./client-manager";
+import { LocalConfig } from "../states/local-config";
 import { LocalClient } from "./local-client";
-
-type hi_message = { t: `hi`; r: string; s: string; };
+import { OnlineSessionHub } from "./session-hub";
 
 export interface ISocketListener {
-    // TODO: for game.
-    onClose(e: CloseEvent | Error): void;
-    onReady(isMom: Room): void;
-    onStart(plannedBalls: number, plannedConfig: number, positionIndex: number): void;
-    onOpponent(id: string, name: string, offset: number): void;
-    onGameMsg(msg: any): void;
+    onOpen(): void;
+    onUpdate(type: string, args?: any): void;
+    onGameMessage(args: any): void;
+    onClose(): void;
 }
 
 export class SocketClient {
     public static readonly HOST = `ws://creative.jaewon.pro:9883`;
 
-    public static async create(roomId: string, local: LocalClient, secret: string, rice: string, listener: ISocketListener) {
-        return new Promise<SocketClient>((resolve) => {
-            new SocketClient(roomId, local, { t: `hi`, r: rice, s: secret }, 
-                resolve, listener);
-        })
+    public static create(roomId: string, localClient: LocalClient, socketListener: ISocketListener) {
+        const [_, s, r] = localClient.cookSecret(`:socket_join:`);
+
+        const websocket = new WebSocket(SocketClient.HOST + '/' + roomId + '/' + localClient.Id);
+        websocket.addEventListener('open', () => websocket.send(JSON.stringify({ t: `hi`, r, s })));    
+
+        return new SocketClient(websocket, socketListener);    
     }
-
-    private socketListener: ISocketListener;
-
-    private connection: WebSocket;
 
     private gameReady: number = 0;
 
-    private constructor(
-        roomId: string, localClient: LocalClient, hi_msg: hi_message, 
-        onReady: (result: SocketClient) => any, listener: ISocketListener
-    ) {
-        this.socketListener = listener;
-        const instance = this;
-        const ws = new WebSocket(SocketClient.HOST + '/' + roomId + '/' + localClient.Id);
-        ws.addEventListener('open', () => ws.send(JSON.stringify(hi_msg)));    
-        ws.addEventListener('error', console.error);
-        ws.addEventListener('close', (e) => instance.socketListener.onClose(e));    
-        ws.addEventListener('message', (event: MessageEvent) => {
+    private websocket: WebSocket;
+
+    private socketListener: ISocketListener;
+
+    constructor(websocket: WebSocket, socketListener: ISocketListener) {
+        this.socketListener = socketListener;
+        this.websocket = websocket;
+        websocket.addEventListener('error', console.error);
+        websocket.addEventListener('close', (e) => this.socketListener.onClose());    
+        websocket.addEventListener('message', (event: MessageEvent) => {
             try {
+                const room = OnlineSessionHub.get.Room;
+                if (room === undefined) throw new Error(`SocketClient#constructor$message: undefined Room.`);
                 const json = JSON.parse(event.data.toString());
                 if (this.gameReady === 0) {
                     switch (json.t) {
                         case `time`:
                             const { l, c } = json;
                             const now = performance.now();
-                            ws.send(JSON.stringify({
+                            websocket.send(JSON.stringify({
                                 t: 'time',
                                 l: now,
                                 d: now - l,
@@ -59,17 +53,18 @@ export class SocketClient {
                             const { s, o, m } = json;
                             if (s) this.gameReady |= 0b00001;
                             if (o) this.gameReady |= 0b00010;
-                            onReady(this);
-                            this.socketListener.onReady(new Room(roomId, m));
+                            this.socketListener.onUpdate(`ready`, { isMoM: m });
                             break;
                         default: 
-                        // WARN: meh? should never happen
+                            // throw new Error(`SocketClient#constructor$time: should never happen.`);
+                            return;
                     }
                 }
                 if (json.t === `knock`) {
                     if ((this.gameReady & 0b10101) !== 0b00101) return;
+                    // INFO: user: { id, name, offset }
                     const { id, n, o } = json;
-                    this.socketListener.onOpponent(id, n, o);
+                    this.socketListener.onUpdate(`opponent-join`, { id, name: n, offset: o });
                     this.gameReady = 0b01111;
                     // INFO: why did I name it balls?
                     // INFO: In Asian culture, the instrument often used openning a fight is called gong, which can be translated into a ball in Korean.
@@ -78,8 +73,6 @@ export class SocketClient {
                     const plannedConfig = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);                    
                     const localPositionIndex = Math.round(Math.random());
                     // INFO: if mom, start game with ball and config
-                    const room = ClientManager.get.Room;
-                    if (room === undefined) throw new Error(`SocketClient#onMessage$knock: undefined room.`);
                     if (!room.LocalState.IsMom) return;
                     this.send({
                         t: `balls`,
@@ -89,16 +82,17 @@ export class SocketClient {
                     });
                     // INFO: start game with ball and config
                     this.gameReady = 0b11111;
-                    this.socketListener.onStart(plannedBalls, plannedConfig, localPositionIndex);
+                    this.socketListener.onUpdate(`start`, {
+                        config: plannedConfig,
+                        startTime: plannedBalls, 
+                        positionIndex: localPositionIndex
+                    });
                     return;
                 }
                 if (json.t === `balls`) {
-                    const room = ClientManager.get.Room;
-                    if (room === undefined) throw new Error(`SocketClient#onMessage$balls: undefined room.`);
                     if ((this.gameReady & 0b10101) !== 0b00101 || room.LocalState.IsMom) return;
                     const remote = room.RemoteState;
                     if (remote === undefined) throw new Error(`SocketClient#onMessage$balls: undefined remote.`);
-
                     const { p, c, pi } = json;
                     const offset = remote.Offset;
                     if (offset === undefined) throw new Error(`SocketClient#onMessage$balls: undefined offset.`);
@@ -106,43 +100,45 @@ export class SocketClient {
                     const plannedConfig = c;
                     // INFO: start game with ball and config
                     this.gameReady = 0b11111;
-                    this.socketListener.onStart(plannedBalls, plannedConfig, pi);
+                    this.socketListener.onUpdate(`start`, {
+                        config: plannedConfig,
+                        startTime: plannedBalls, 
+                        positionIndex: pi
+                    });
                 }
                 if (this.gameReady !== 0b11111) return;
-                this.socketListener.onGameMsg(json);
+                this.socketListener.onGameMessage(json);
 
             } catch (e) {
-                if (e instanceof SyntaxError) {
-                    // INFO: wrong json
-                }
+                // if (e instanceof SyntaxError) {
+                //     // INFO: wrong json
+                // }
                 console.error(e);
-                // WARN: possibly not error
-                this.socketListener.onClose(<Error>e);
+                this.socketListener.onClose();
             }
             // TODO: to json, to interface.
         });
-
-        this.connection = ws;
     }
 
-    public knock(id: string, name: string) {
+    public knock() {
         this.gameReady |= 0b00101;
         const interval = setInterval(() => {
             if ((this.gameReady & 0b10101) !== 0b00101) return clearInterval(interval);
 
-            this.send({ t: `knock`, n: name });
-        }, 3000);
+            this.send({ t: `knock`, n: LocalConfig.get.Name });
+        }, 1000);
     }
 
+
     public send(msg: any) {
-        this.connection.send(JSON.stringify(msg));
+        this.websocket.send(JSON.stringify(msg));
     }
 
     public destroy() {
         this.gameReady = 0;
-        if (this.connection.readyState > 1) return;
+        if (this.websocket.readyState > 1) return;
         this.send({ t: `bye` });
-        this.connection.close();
+        this.websocket.close();
         (<any>this).socketListener = undefined;
     }
 }

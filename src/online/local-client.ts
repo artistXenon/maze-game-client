@@ -3,15 +3,12 @@ import { sha1 } from "js-sha1";
 export class LocalClient {
     private static readonly TABLE = `abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789`;
 
-    public Name: string;
-
     private id: string;
 
     private secret: string;
 
-    constructor(id: string, name: string, secret: string) {
+    constructor(id: string, secret: string) {
         this.id = id;
-        this.Name = name;
         this.secret = secret;
     }
 

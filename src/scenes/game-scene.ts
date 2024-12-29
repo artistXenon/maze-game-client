@@ -4,14 +4,14 @@ import { IPointerListener } from "artistic-engine/event";
 import { Modifier, SequentialModifier } from "artistic-engine/modifiers";
 import { getAssetManager } from "../asset";
 import { CustomEngine, getEngine } from "../engine";
-import { ClientManager } from "../net/client-manager";
-import Maze from "../maze/maze";
 import { mazeDrawer } from "../helper/maze-drawer";
 import { Count } from "../elements/game/count";
-import { Room } from "../states/room";
 import { PlayerSprite } from "../elements/game/player";
 import { KeyListener } from "../key-listener";
-import { AbstractState } from "../states/abstract-state";
+import { OnlineSessionHub } from "../online/session-hub";
+import { GameHandler } from "../online/game-handler";
+import { LocalConfig } from "../states/local-config";
+import { AbstractState } from "../online/abstract-state";
 
 // TODO: u know
 const SPEED = 10 / 1000;
@@ -19,8 +19,6 @@ const maze_x = 1920 * 0.1, maze_y = 1080 * 0.1, maze_w = 1920 * 0.8, maze_h = 10
 const cell_w = maze_w / 16;
 
 class GameScene extends Scene implements IPointerListener, KeyListener {
-
-    private maze?: Maze;
 
     private counter: Count = new Count();
 
@@ -50,30 +48,24 @@ class GameScene extends Scene implements IPointerListener, KeyListener {
         this.attachChildren([this.counter, this.remotelPlayer, this.localPlayer]);
     }
 
-    public get Maze() {
-        return this.maze;
-    }
-
     override onDraw(context: CanvasRenderingContext2D, delay: number): void {
         context.fillStyle = "skyblue";
         context.fillRect(0, 0, this.W, this.H);
 
-        if (!this.maze?.Ready) return;
-        // TODO: these properties ought be global somewhere
-        mazeDrawer(context, this.maze, { x: maze_x, y: maze_y, w: maze_w, h: maze_h });
-
+        const room = OnlineSessionHub.get.Room;
+        if (room === undefined) return;
+        const maze = room.GameHandler.Maze;
+        mazeDrawer(context, maze, { x: maze_x, y: maze_y, w: maze_w, h: maze_h });
         const now = performance.now();
-        const room = ClientManager.get.Room;
-        if (room === undefined) throw new Error(`GameScene#onDraw: undefined Room.`);
-        this.playerPositionUpdate(room, now, room.LocalState, this.localPlayer);
-        if (room.RemoteState !== undefined) 
-            this.playerPositionUpdate(room, now, room.RemoteState, this.remotelPlayer);
+        this.playerPositionUpdate(now, room.LocalState, this.localPlayer);
+        if (room.RemoteState !== undefined) {
+            this.playerPositionUpdate(now, room.RemoteState, this.remotelPlayer);
+        }
     }
 
     public onAttachEngine(engine: Engine, previousScene: Scene): void {
         const e = <CustomEngine>engine;
         e.PointerGroup.registerPointerListener(this);
-
     }
 
     public onDetachEngine(engine: Engine): void {
@@ -96,18 +88,17 @@ class GameScene extends Scene implements IPointerListener, KeyListener {
     }
     
     onKey(e: KeyboardEvent): void {
-        ClientManager.get.GameHandler?.onKey(e);
+        OnlineSessionHub.get.Room?.GameHandler.onKey(e);
     }
 
-    public init(room: Room) {
+    public init(gameHandler: GameHandler) {
         getEngine().Scene = this;
-        this.maze = new Maze(room.Config ?? 0, 16, 9);
-        this.maze.generate();
+        gameHandler.updateMaze(LocalConfig.get.MazeSeed, LocalConfig.get.MazeWidth, LocalConfig.get.MazeHeight);
         // TODO: put players, put count, put controller
-        this.counter.count(room.StartTime);
+        this.counter.count(gameHandler.StartTime);
     }
 
-    private playerPositionUpdate(room: Room, now: number, state: AbstractState, sprite: PlayerSprite) {
+    private playerPositionUpdate(now: number, state: AbstractState, sprite: PlayerSprite) {
         if (state.from.x === state.to.x) {
             if (state.from.y === state.to.y) {
                 // TODO: no movement

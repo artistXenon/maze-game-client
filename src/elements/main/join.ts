@@ -1,4 +1,4 @@
-import { ClientManager } from "../../net/client-manager";
+import { OnlineSessionHub } from "../../online/session-hub";
 import { getMainScene } from "../../scenes/main-scene";
 import Button from "../button";
 import QIDText from "../qid-text";
@@ -14,22 +14,15 @@ export default class JoinRoomButton extends Button {
         const mainScene = getMainScene();
         try {
             mainScene.enableLoading(true);
-            let steps = false;
-            steps = await ClientManager.get.registerClient();
-            if (!steps) throw new Error(`failed to register client`);
+            await OnlineSessionHub.get.registerClient();
             const roomId = this.inputRoomId.Text;
-            if (roomId.length === 0) throw new Error(`no id meh`);
-            steps = await ClientManager.get.joinRoom(roomId);
-            if (!steps) throw new Error(`failed to join room`);
-            const localClient = ClientManager.get.Client;
-            if (localClient === undefined) throw new Error(`undefined LocalClient`);
-
-            ClientManager.get.SocketClient?.knock(localClient.Id, localClient.Name);
+            if (roomId.length === 0) throw new Error(`JoinRoomButton#onUp: no id provided`);
+            await OnlineSessionHub.get.joinRoom(roomId);
         } catch (e) {
             // TODO: show on screen
             console.error(e);
         } finally {
-            mainScene.enableLoading(true);
+            mainScene.enableLoading(false);
         }
     }
 }

@@ -31,37 +31,28 @@ let engine: CustomEngine;
 const getEngine: () => CustomEngine = () => {
     if (engine === undefined) {
         engine = new CustomEngine();
-        const cfg = { Resolution: { X: 1920, Y: 1080} }
+        const resolution = { X: 1920, Y: 1080};
 
         // resolution
         const fitScreen = () => {
-            const fitWidth =
-                cfg.Resolution.X * innerHeight > cfg.Resolution.Y * innerWidth;
-            if (fitWidth)
-                engine.resizeCanvas({
-                    W: innerWidth,
-                    H: (innerWidth * cfg.Resolution.Y) / cfg.Resolution.X,
-                });
-            else
-                engine.resizeCanvas({
-                    W: (innerHeight * cfg.Resolution.X) / cfg.Resolution.Y,
-                    H: innerHeight,
-                });
+            const fitWidth = resolution.X * innerHeight > resolution.Y * innerWidth;
+            engine.resizeCanvas(
+            fitWidth ? {
+                W: innerWidth,
+                H: (innerWidth * resolution.Y) / resolution.X,
+            } : {
+                W: (innerHeight * resolution.X) / resolution.Y,
+                H: innerHeight,
+            });
             engine.Camera.reset();
             engine.Camera.scale(
                 fitWidth
-                    ? innerWidth / cfg.Resolution.X
-                    : innerHeight / cfg.Resolution.Y,
+                    ? innerWidth / resolution.X
+                    : innerHeight / resolution.Y,
             );
-
-            // if (cfg.fullscreen) canvas.requestFullscreen({ navigationUI: "hide" });
-
-            (<any>window).engine = engine;
         };
         fitScreen();
         addEventListener("resize", fitScreen);
-
-        // event
     }
     return engine;
 };
