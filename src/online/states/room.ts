@@ -1,10 +1,10 @@
-import { LocalConfig } from "../states/local-config";
-import { GameHandler } from "./game-handler";
-import { LocalClient } from "./local-client";
-import { LocalState } from "./local-state";
-import { RemoteState } from "./remote-state";
-import { OnlineSessionHub } from "./session-hub";
-import { ISocketListener, SocketClient } from "./socket-client";
+import { LocalConfig } from "../../states/local-config";
+import { GameHandler } from "../game-handler";
+import { OnlineSessionHub } from "../session-hub";
+import { ISocketListener, SocketClient } from "../socket-client";
+import LocalClient from "./local-client";
+import LocalState from "./local-state";
+import RemoteState from "./remote-state";
 
 export class Room implements ISocketListener {
 

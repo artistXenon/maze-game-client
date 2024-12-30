@@ -1,9 +1,8 @@
-import { coord } from "../helper/types";
-import Maze from "../maze/maze";
-import { LocalConfig } from "../states/local-config";
-import { GameHandler } from "./game-handler";
+import { coord } from "../../helper/types";
+import { LocalConfig } from "../../states/local-config";
+import { GameHandler } from "../game-handler";
 
-export abstract class AbstractState {
+export default abstract class AbstractState {
     private isMom: boolean;
 
     // INFO: game state

@@ -1,6 +1,6 @@
 import { Sprite } from "artistic-engine/sprite";
 
-export class PlayerSprite extends Sprite {
+export default class PlayerSprite extends Sprite {
     private static readonly size = 10;
 
     private c: string;

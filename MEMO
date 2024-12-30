@@ -105,27 +105,6 @@ Room & SocketListener {
 }
 
 서버 파일도 고치고 싶다,
-지금 db는
-現
-Client {
-	/id ip secret expire /
-	Room {
-		/ id /
-		momClient
-		dadClient
-	}
-	Connection {
-		/ expire ready lastSync offset ping /
-		Client
-		Room
-	}
-}
-
-ip > clients
-id > client
-id > room
-
-
 後
 
 Room {
@@ -141,3 +120,26 @@ Client & SocketHandler {
 		WebSocket
 	}
 }
+
+
+그래도 좀 볼만하게 고친 거는 같은데..
+고치고 봐도 또 고치긴 해야할 듯
+
+먼저 끝내야 하는 건: 
+end 이벤트 처리, 리매치 처리,
+maze 매번 instance 만들지 않아도 되도록 팩토링
+
+필요한 ui 추가
+- 공통:
+-- 오류 메시지
+- 메인:
+-- 연결 상태 (과정, 방파기 결과 코드)
+-- 설정
+- 게임:
+-- 나가기
+-- 결과창
+-- - 리겜
+-- - 나가기
+
+
+

@@ -2,7 +2,7 @@ import "./style.css";
 import { getEngine } from "./engine";
 import { getAssetManager } from "./asset";
 import { getMainScene } from "./scenes/main-scene";
-import { KeyListener } from "./key-listener";
+import { KeyListener } from "./helper/key-listener";
 
 (async () => {
     const engine = getEngine();

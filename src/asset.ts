@@ -93,7 +93,7 @@ const getAssetManager = () => {
     if (instance === undefined) {
         instance = new AssetManager();
 
-        // TODO: debugging purpose, remove later on
+        // TODO: debugging purpose, remove later
         (<any>window).assetmanager = instance;
     }
     return instance;

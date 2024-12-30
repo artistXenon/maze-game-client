@@ -1,4 +1,4 @@
-import Maze from "../maze/maze";
+import { Maze } from "../maze";
 
 type dimension = {
     x: number;

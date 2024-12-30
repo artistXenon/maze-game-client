@@ -1,7 +1,7 @@
 import { OnlineSessionHub } from "../../online/session-hub";
 import { getMainScene } from "../../scenes/main-scene";
 import Button from "../button";
-import QIDText from "../qid-text";
+import QIDText from "./qid-text";
 
 export default class JoinRoomButton extends Button {
     private inputRoomId: QIDText;

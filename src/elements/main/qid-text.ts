@@ -1,4 +1,4 @@
-import { BaseText, InputState } from "./base-text";
+import { BaseText, InputState } from "../base-text";
 
 export default class QIDText extends BaseText {
     constructor() {

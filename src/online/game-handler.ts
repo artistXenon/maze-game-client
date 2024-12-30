@@ -1,9 +1,8 @@
 import { coord } from "../helper/types";
-import Maze from "../maze/maze";
+import { Maze } from "../maze";
 import { getGameScene } from "../scenes/game-scene";
-import { AbstractState } from "./abstract-state";
-import { LocalState } from "./local-state";
 import { OnlineSessionHub } from "./session-hub";
+import { AbstractState } from "./states";
 
 export class GameHandler {
     private gaming: boolean = false;

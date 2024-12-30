@@ -5,14 +5,12 @@ import { Modifier, SequentialModifier } from "artistic-engine/modifiers";
 import { getAssetManager } from "../asset";
 import { CustomEngine, getEngine } from "../engine";
 import { mazeDrawer } from "../helper/maze-drawer";
-import { Count } from "../elements/game/count";
-import { PlayerSprite } from "../elements/game/player";
-import { KeyListener } from "../key-listener";
+import { KeyListener } from "../helper/key-listener";
 import { OnlineSessionHub } from "../online/session-hub";
 import { GameHandler } from "../online/game-handler";
 import { LocalConfig } from "../states/local-config";
-import { AbstractState } from "../online/abstract-state";
-import { LocalState } from "../online/local-state";
+import { CountSprite, PlayerSprite } from "../elements/game";
+import { AbstractState, LocalState } from "../online/states";
 
 // TODO: u know
 const SPEED = 10 / 1000;
@@ -21,7 +19,7 @@ const cell_w = maze_w / 32;
 
 class GameScene extends Scene implements IPointerListener, KeyListener {
 
-    private counter: Count = new Count();
+    private counter: CountSprite = new CountSprite();
 
     private localPlayer: PlayerSprite = new PlayerSprite(`blue`);
     

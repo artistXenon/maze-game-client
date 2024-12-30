@@ -1,7 +1,7 @@
-import { coord } from "../helper/types";
-import { AbstractState } from "./abstract-state";
+import { coord } from "../../helper/types";
+import AbstractState from "./abstract-state";
 
-export class RemoteState extends AbstractState {
+export default class RemoteState extends AbstractState {
 
     private id: string;
 

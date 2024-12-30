@@ -1,8 +1,7 @@
 import { getEngine } from "../engine";
 import { getMainScene } from "../scenes/main-scene";
 import { HttpClient } from "./http-client";
-import { LocalClient } from "./local-client";
-import { Room } from "./room";
+import { LocalClient, Room } from "./states";
 
 export class OnlineSessionHub {
     private static readonly instance = new OnlineSessionHub();

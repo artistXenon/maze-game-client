@@ -1,6 +1,6 @@
 import { sha1 } from "js-sha1";
 
-export class LocalClient {
+export default class LocalClient {
     private static readonly TABLE = `abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789`;
 
     private id: string;

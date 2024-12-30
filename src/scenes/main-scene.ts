@@ -1,11 +1,9 @@
 import { Engine } from "artistic-engine";
 import { Scene } from "artistic-engine/sprite";
 import { IPointerListener } from "artistic-engine/event";
-import { CustomEngine, getEngine } from "../engine";
-import QIDText from "../elements/qid-text";
-import CreateRoomButton from "../elements/main/create";
-import JoinRoomButton from "../elements/main/join";
+import { CustomEngine } from "../engine";
 import { getGameScene } from "./game-scene";
+import { CreateRoomButton, JoinRoomButton, QIDText } from "../elements/main";
 
 class MainScene extends Scene implements IPointerListener {
     private title: ImageBitmap | undefined;

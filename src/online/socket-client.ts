@@ -1,5 +1,5 @@
 import { LocalConfig } from "../states/local-config";
-import { LocalClient } from "./local-client";
+import { LocalClient } from "./states/local-client";
 import { OnlineSessionHub } from "./session-hub";
 
 export interface ISocketListener {

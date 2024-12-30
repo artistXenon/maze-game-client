@@ -1,7 +1,7 @@
 import { Sprite } from "artistic-engine/sprite";
 import { getEngine } from "../../engine";
 
-export class Count extends Sprite {
+export default class CountSprite extends Sprite {
     private static frame_unit = 1000;
 
     private counting: boolean = false;
@@ -20,9 +20,9 @@ export class Count extends Sprite {
         // TODO: pretty~
         const diff = this.Time;
         const currentFrame = 
-            diff > Count.frame_unit * 3 ? `Ready` :
-            diff > Count.frame_unit * 2 ? `3` :
-            diff > Count.frame_unit * 1 ? `2` :
+            diff > CountSprite.frame_unit * 3 ? `Ready` :
+            diff > CountSprite.frame_unit * 2 ? `3` :
+            diff > CountSprite.frame_unit * 1 ? `2` :
             diff > 0 ? `1` : `GO`;
         context.fillStyle = `white`;
         // TODO: 
