@@ -6,9 +6,9 @@ export class LocalConfig {
     private name: string = `player` + (Date.now() % 1000);
 
         // INFO: maze info
-    private maze_width: number = 16;
+    private maze_width: number = 32;
 
-    private maze_height: number = 9;
+    private maze_height: number = 18;
 
     private maze_seed: number = 0;
 

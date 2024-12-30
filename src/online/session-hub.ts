@@ -13,6 +13,10 @@ export class OnlineSessionHub {
 
     private room?: Room;
 
+    private constructor() {
+        (<any>window).hub = this;
+    }
+
     public get LocalClient() {
         return this.localClient;
     }

@@ -6,7 +6,7 @@ export interface ISocketListener {
     onOpen(): void;
     onUpdate(type: string, args?: any): void;
     onGameMessage(args: any): void;
-    onClose(): void;
+    onClose(reason: any): void;
 }
 
 export class SocketClient {
@@ -31,7 +31,7 @@ export class SocketClient {
         this.socketListener = socketListener;
         this.websocket = websocket;
         websocket.addEventListener('error', console.error);
-        websocket.addEventListener('close', (e) => this.socketListener.onClose());    
+        websocket.addEventListener('close', (e) => this.socketListener.onClose(e));    
         websocket.addEventListener('message', (event: MessageEvent) => {
             try {
                 const room = OnlineSessionHub.get.Room;
@@ -66,14 +66,13 @@ export class SocketClient {
                     const { id, n, o } = json;
                     this.socketListener.onUpdate(`opponent-join`, { id, name: n, offset: o });
                     this.gameReady = 0b01111;
+                    if (!room.LocalState.IsMom) return;
                     // INFO: why did I name it balls?
                     // INFO: In Asian culture, the instrument often used openning a fight is called gong, which can be translated into a ball in Korean.
                     // INFO: ...and, you've been knocking for a while. What do you expect other than a good fxxking Ligma :D
                     const plannedBalls = performance.now() + 1000 * 7;
                     const plannedConfig = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);                    
                     const localPositionIndex = Math.round(Math.random());
-                    // INFO: if mom, start game with ball and config
-                    if (!room.LocalState.IsMom) return;
                     this.send({
                         t: `balls`,
                         p: plannedBalls,
@@ -90,7 +89,7 @@ export class SocketClient {
                     return;
                 }
                 if (json.t === `balls`) {
-                    if ((this.gameReady & 0b10101) !== 0b00101 || room.LocalState.IsMom) return;
+                    if ((this.gameReady & 0b11111) !== 0b01111 || room.LocalState.IsMom) return;
                     const remote = room.RemoteState;
                     if (remote === undefined) throw new Error(`SocketClient#onMessage$balls: undefined remote.`);
                     const { p, c, pi } = json;
@@ -113,8 +112,7 @@ export class SocketClient {
                 // if (e instanceof SyntaxError) {
                 //     // INFO: wrong json
                 // }
-                console.error(e);
-                this.socketListener.onClose();
+                this.socketListener.onClose(e);
             }
             // TODO: to json, to interface.
         });
@@ -129,6 +127,15 @@ export class SocketClient {
         }, 1000);
     }
 
+    public end() {
+        // TODO: match over
+        // TODO: verified end will be handled after response.
+        // TODO: so here, we just pause all inputs and wait
+        this.send({
+            t: `end`, 
+            n: performance.now()
+        });
+    }
 
     public send(msg: any) {
         this.websocket.send(JSON.stringify(msg));
@@ -139,6 +146,5 @@ export class SocketClient {
         if (this.websocket.readyState > 1) return;
         this.send({ t: `bye` });
         this.websocket.close();
-        (<any>this).socketListener = undefined;
     }
 }

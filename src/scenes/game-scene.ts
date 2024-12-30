@@ -12,11 +12,12 @@ import { OnlineSessionHub } from "../online/session-hub";
 import { GameHandler } from "../online/game-handler";
 import { LocalConfig } from "../states/local-config";
 import { AbstractState } from "../online/abstract-state";
+import { LocalState } from "../online/local-state";
 
 // TODO: u know
 const SPEED = 10 / 1000;
 const maze_x = 1920 * 0.1, maze_y = 1080 * 0.1, maze_w = 1920 * 0.8, maze_h = 1080 * 0.8;
-const cell_w = maze_w / 16;
+const cell_w = maze_w / 32;
 
 class GameScene extends Scene implements IPointerListener, KeyListener {
 
@@ -92,13 +93,16 @@ class GameScene extends Scene implements IPointerListener, KeyListener {
     }
 
     public init(gameHandler: GameHandler) {
-        getEngine().Scene = this;
         gameHandler.updateMaze(LocalConfig.get.MazeSeed, LocalConfig.get.MazeWidth, LocalConfig.get.MazeHeight);
+        getEngine().Scene = this;
         // TODO: put players, put count, put controller
         this.counter.count(gameHandler.StartTime);
     }
 
     private playerPositionUpdate(now: number, state: AbstractState, sprite: PlayerSprite) {
+        const room = OnlineSessionHub.get.Room;
+        if (room === undefined) throw new Error(`GameScene#playerPositionUpdate: undefined room.`);
+        
         if (state.from.x === state.to.x) {
             if (state.from.y === state.to.y) {
                 // TODO: no movement
@@ -115,9 +119,10 @@ class GameScene extends Scene implements IPointerListener, KeyListener {
             sprite.Y = maze_y + cell_w * (0.5 + rawY);
 
             if (arrive) {
-                // TODO: arrival!
-                state.from.y = state.to.y;
                 sprite.Y = maze_y + cell_w * (0.5 + state.to.y);
+                (<LocalState>state).onArrival(room.GameHandler);
+                if (room.LocalState === state) {
+                }
             }
         } else if (state.from.y === state.to.y) {
             // INFO: x movement
@@ -129,9 +134,10 @@ class GameScene extends Scene implements IPointerListener, KeyListener {
             sprite.Y = maze_y + cell_w * (0.5 + state.to.y);;
 
             if (arrive) {
-                // TODO: arrival!
-                state.from.x = state.to.x;
                 sprite.X = maze_x + cell_w * (0.5 + state.to.x);
+                (<LocalState>state).onArrival(room.GameHandler);
+                if (room.LocalState === state) {
+                }
             }
         } else throw new Error(`GameScene#playerPositionUpdate: diagonal movement`);
 
@@ -146,7 +152,6 @@ let gameScene: GameScene;
 const getGameScene = () => {
     if (gameScene === undefined) {
         gameScene = new GameScene();
-        (<any>window).gameScene = gameScene;
     }
     return gameScene;
 };

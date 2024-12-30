@@ -1,11 +1,14 @@
+import { coord } from "../helper/types";
 import Maze from "../maze/maze";
 import { getGameScene } from "../scenes/game-scene";
+import { AbstractState } from "./abstract-state";
+import { LocalState } from "./local-state";
 import { OnlineSessionHub } from "./session-hub";
 
 export class GameHandler {
     private gaming: boolean = false;
 
-    private gameStartTime: number = 0;
+    private gameStartTime: number = Infinity;
 
     private maze: Maze;
 
@@ -66,13 +69,13 @@ export class GameHandler {
     }    
 
     public onKey(e: KeyboardEvent) {
-        // TODO: if moving return
+        // INFO: if moving return
         const localState = OnlineSessionHub.get.Room?.LocalState;
         if (localState === undefined) return;
         if (localState.to.x !== localState.from.x || localState.to.y !== localState.from.y) return;
 
-        // TODO: set from, to, since
         if (e.type !== `keydown`) return;
+        if (this.gameStartTime > performance.now()) return;
         let nextDest = { x: localState.from.x, y: localState.from.y };        
         let [ up, down, left, right ] = this.maze.getSurroundingWalls(nextDest.x, nextDest.y);
 
@@ -80,22 +83,18 @@ export class GameHandler {
             case `ArrowUp`:
                 if (up) return;
                 nextDest.y -= 1;
-                up = this.maze.getSurroundingWalls(nextDest.x, nextDest.y)[0];
                 break;
             case `ArrowDown`:
                 if (down) return;
                 nextDest.y += 1;
-                down = this.maze.getSurroundingWalls(nextDest.x, nextDest.y)[1];
                 break;
             case `ArrowLeft`:
                 if (left) return;
                 nextDest.x -= 1;
-                left = this.maze.getSurroundingWalls(nextDest.x, nextDest.y)[2];
                 break;
             case `ArrowRight`:
                 if (right) return;
                 nextDest.x += 1;
-                right = this.maze.getSurroundingWalls(nextDest.x, nextDest.y)[3];
                 break;
             default: 
                 return;
@@ -133,5 +132,16 @@ export class GameHandler {
                 // TODO: handle game over
                 break;
         }
+    }
+
+    public evaluatePause(state: AbstractState, coord: coord): boolean {
+        if (state.Goal.x === coord.x && state.Goal.y === coord.y) {
+            const room = OnlineSessionHub.get.Room;
+            if (room?.LocalState === state) {
+                room.SocketClient?.end();
+            }
+            return true;
+        }
+        return false;
     }
 }

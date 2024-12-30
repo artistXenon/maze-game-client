@@ -81,7 +81,8 @@ export class Room implements ISocketListener {
         this.gameHandler.onGameMessage(args);
     }
 
-    onClose(): void {
+    onClose(reason: any): void {
+        // console.error(reason);
         OnlineSessionHub.get.leaveRoom();        
     }    
 }

@@ -1,10 +1,14 @@
 import { coord } from "../helper/types";
+import Maze from "../maze/maze";
 import { LocalConfig } from "../states/local-config";
+import { GameHandler } from "./game-handler";
 
 export abstract class AbstractState {
     private isMom: boolean;
 
     // INFO: game state
+    private goal: coord = { x: 0, y: 0 };
+
     public from: coord = { x: 0, y: 0 };
 
     public to: coord = { x: 0, y: 0 };
@@ -14,6 +18,10 @@ export abstract class AbstractState {
 
     constructor(isMom: boolean) {
         this.isMom = isMom;
+    }
+
+    public get Goal() {
+        return this.goal;
     }
 
     public get IsMom() {
@@ -27,11 +35,15 @@ export abstract class AbstractState {
             this.from.y = 0;
             this.to.x = LocalConfig.get.MazeWidth - 1;
             this.to.y = 0;
+            this.goal.x = 0;
+            this.goal.y = LocalConfig.get.MazeHeight - 1;
         } else if (index === 0) {
             this.from.x = 0;
             this.from.y = LocalConfig.get.MazeHeight - 1;
             this.to.x = 0;
             this.to.y = LocalConfig.get.MazeHeight - 1;
+            this.goal.x = LocalConfig.get.MazeWidth - 1;
+            this.goal.y = 0;
         }
     }
 
@@ -39,6 +51,68 @@ export abstract class AbstractState {
         this.from = from;
         this.to = to;
         this.since = since;
-        console.log(`performance now: ${performance.now()}\nreceived since: ${since}`);
+        // console.log(`performance now: ${performance.now()}\nreceived since: ${since}`);
+    }
+
+    public onArrival(gameHandler: GameHandler) {
+        const startingCoord = { x: this.to.x, y: this.to.y };
+        const { x, y } = this.from;
+        let walls = gameHandler.Maze.getSurroundingWalls(startingCoord.x, startingCoord.y);
+        // const [ up, down, left, right ] = walls;
+        const open = walls.map((a) => <number>(a ? 1 : 0)).reduce((a, b) => a + b);
+        const from = 
+            y < this.to.y ? `up` :
+            y > this.to.y ? `down` :
+            x < this.to.x ? `left` :
+            x > this.to.x ? `right` : undefined;
+        if (
+            open !== 2 || from === undefined || 
+            gameHandler.evaluatePause(this, startingCoord)
+        ) {
+            this.from.x = this.to.x;
+            this.from.y = this.to.y;
+            this.since = performance.now();
+            return;
+        }
+        // TODO: if goal, stop
+        let endCoord = { x: startingCoord.x, y: startingCoord.y };
+        if (!walls[0] && from !== `up`) {
+            do {
+                endCoord.y -= 1;
+                walls = gameHandler.Maze.getSurroundingWalls(endCoord.x, endCoord.y);
+            } while (
+                !walls[0] && walls[2] && walls[3] &&
+                !gameHandler.evaluatePause(this, endCoord)
+            );
+        } else if (!walls[1] && from !== `down`) {
+            do {
+                endCoord.y += 1;
+                walls = gameHandler.Maze.getSurroundingWalls(endCoord.x, endCoord.y);
+            } while (
+                !walls[1] && walls[2] && walls[3] &&
+                !gameHandler.evaluatePause(this, endCoord)
+            );
+        } else if (!walls[2] && from !== `left`) {
+            do {
+                endCoord.x -= 1;
+                walls = gameHandler.Maze.getSurroundingWalls(endCoord.x, endCoord.y);
+            } while (
+                walls[0] && walls[1] && !walls[2] &&
+                !gameHandler.evaluatePause(this, endCoord)
+            );
+        } else if (!walls[3] && from !== `right`) {
+            do {
+                endCoord.x += 1;
+                walls = gameHandler.Maze.getSurroundingWalls(endCoord.x, endCoord.y);
+            } while (
+                walls[0] && walls[1] && !walls[3] &&
+                !gameHandler.evaluatePause(this, endCoord)
+            );
+        }
+        this.since = performance.now();
+        this.from.x = this.to.x;
+        this.from.y = this.to.y;
+        this.to.x = endCoord.x;
+        this.to.y = endCoord.y;
     }
 }

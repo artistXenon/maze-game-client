@@ -75,48 +75,6 @@ simulate connection
 
 승리 조건, 리매치, 타임아웃 도입하기 전에, 연결부를 손보고 싶은데...
 
-現 연결부 상관 조직: 
-ClientManager {
-	HttpClient
-	LocalClient { / name, id, secret / }
-	Room {
-		/ startTime, id /
-		LocalState {
-			/ common states /
-			isMom
-		}
-		RemoteState {
-			/ common states /
-			/ id, name, offset /
-		}
-		Config
-	}
-	SocketClient {
-		/ gameReady / 
-		SocketListener {
-			onClose
-			onReady
-			onStart
-			onOpponent
-			onGameMsg
-		}
-		WebSocket
-	}
-	GameHandler {
-		/ gaming, interval / 
-		GameScene {
-			/ Sprites /
-			maze base config
-			Maze
-		}
-		LocalClient
-		Room
-		LocalState
-		RemoteState		
-	}
-}
-
-追:
 LocalConfig (LocalConstant) { 
 	name
 }
@@ -144,4 +102,42 @@ Room & SocketListener {
 	onUpdate - ready, join, start
 	onGameMsg
 	onClose
+}
+
+서버 파일도 고치고 싶다,
+지금 db는
+現
+Client {
+	/id ip secret expire /
+	Room {
+		/ id /
+		momClient
+		dadClient
+	}
+	Connection {
+		/ expire ready lastSync offset ping /
+		Client
+		Room
+	}
+}
+
+ip > clients
+id > client
+id > room
+
+
+後
+
+Room {
+	/ id /
+	momClient
+	dadClient
+}
+Client & SocketHandler {
+	/ id secret ip expire /
+	Room?
+	Connection? {
+		/ expire ready lastSync offset ping /
+		WebSocket
+	}
 }
