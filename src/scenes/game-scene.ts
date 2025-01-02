@@ -11,6 +11,7 @@ import { GameHandler } from "../online/game-handler";
 import { LocalConfig } from "../states/local-config";
 import { CountSprite, PlayerSprite } from "../elements/game";
 import { AbstractState, LocalState } from "../online/states";
+import BaseModal from "../elements/base-modal";
 
 // TODO: u know
 const SPEED = 10 / 1000;
@@ -18,6 +19,8 @@ const maze_x = 1920 * 0.1, maze_y = 1080 * 0.1, maze_w = 1920 * 0.8, maze_h = 10
 const cell_w = maze_w / 32;
 
 class GameScene extends Scene implements IPointerListener, KeyListener {
+
+    private resultModal?: BaseModal;
 
     private counter: CountSprite = new CountSprite();
 
@@ -65,6 +68,9 @@ class GameScene extends Scene implements IPointerListener, KeyListener {
     public onAttachEngine(engine: Engine, previousScene: Scene): void {
         const e = <CustomEngine>engine;
         e.PointerGroup.registerPointerListener(this);
+        if (this.resultModal === undefined) return;
+        this.resultModal.setParent(null);
+        e.PointerGroup.unregisterPointerListener(this.resultModal);
     }
 
     public onDetachEngine(engine: Engine): void {
@@ -95,6 +101,22 @@ class GameScene extends Scene implements IPointerListener, KeyListener {
         getEngine().Scene = this;
         // TODO: put players, put count, put controller
         this.counter.count(gameHandler.StartTime);
+    }
+
+    public gameover(result: boolean) {
+        if (this.resultModal !== undefined) {
+            this.detachChildren(this.resultModal);
+            getEngine().PointerGroup.unregisterPointerListener(this.resultModal);
+        }
+        this.resultModal = new BaseModal(
+            `당신이 ${result ? `승리` : `패배`}했습니다.`,
+            (result ? `당신이 바로 진정한 미로 탐험가 입니다.` : `그러고도 탐험가입니까? 푸풋ㅋㅋ`) + 
+            `\n 리매치를 하시겠습니까?`,
+            () => OnlineSessionHub.get.Room?.SocketClient?.knock(),
+            () => OnlineSessionHub.get.leaveRoom()
+        );
+        this.attachChildren(this.resultModal);
+        getEngine().PointerGroup.registerPointerListener(this.resultModal);
     }
 
     private playerPositionUpdate(now: number, state: AbstractState, sprite: PlayerSprite) {

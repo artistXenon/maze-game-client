@@ -20,6 +20,7 @@ export class Room implements ISocketListener {
 
     constructor(id: string, localClient: LocalClient, isLocalMom: boolean) {
         this.id = id;
+        console.log(`room joining: `, id);
         this.gameHandler = new GameHandler();
         this.socketClient = SocketClient.create(id, localClient, this);
         this.localState = new LocalState(isLocalMom);
@@ -51,15 +52,18 @@ export class Room implements ISocketListener {
         this.remoteState = undefined;
     }
 
-    onOpen(): void {
-        throw new Error("Method not implemented.");
+    onOpen(websocket: WebSocket): void {
+        const client = OnlineSessionHub.get.LocalClient;
+        if (client === undefined) throw new Error(`Room#onOpen: undefined client.`);
+        const [_, s, r] = client.cookSecret(`:socket_join:`);
+        websocket.send(JSON.stringify({ t: `hi`, s, r }))
     }
 
     onUpdate(type: string, args?: any): void {
         switch (type) {
             case `ready`:
                 if (args.isMoM !== this.localState.IsMom) {
-                    throw new Error(`Room#onUpdate: illegal mommy.`);
+                    throw new Error(`Room#onUpdate: illegal mom.`);
                 }
                 this.socketClient?.knock();
                 break;

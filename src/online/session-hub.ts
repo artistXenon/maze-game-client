@@ -27,14 +27,9 @@ export class OnlineSessionHub {
     public async registerClient(): Promise<LocalClient> {
         try {
             // INFO: if client exist, attempt renew, else abandon client
-            if (this.localClient !== undefined) {
-                const ext = await this.renewClient();
-                if (ext) return this.localClient;
-                else this.unregisterClient();
-            }
-
+            if (this.localClient !== undefined && (await this.renewClient())) return this.localClient;           
             const res = await HttpClient.get.registerClient();
-            if (!res.q) throw new Error(`OnlineSessionHub#registerClient: client register denied.`);
+            if (!res.q) throw new Error(`client register denied.`);
             this.localClient = new LocalClient(res.id, res.s);
             return this.localClient;
         }
@@ -59,17 +54,16 @@ export class OnlineSessionHub {
         const recipe = this.localClient.cookSecret(`:renew_client:`);
         const [id, secret, rice] = recipe;
         const res = await HttpClient.get.extendClientExpiration(id, secret, rice);
+        if (!res.q) this.unregisterClient();
         return res.q;
     }
-    
+
     public async createRoom(): Promise<void> {
         if (this.localClient === undefined) {
             this.localClient = await this.registerClient();
         }
-        const localClient = this.localClient;      
-
+        const localClient = this.localClient;
         const recipe = localClient.cookSecret(`:create_room:`);
-
         try {
             const [id, secret, rice] = recipe;
             const res = await HttpClient.get.createRoom(id, secret, rice);

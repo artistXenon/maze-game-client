@@ -7,7 +7,7 @@ export default class QIDText extends BaseText {
 
     public beforeTextUpdate(oldState: InputState, newState: InputState): (InputState | void) {
         const { value } = newState;
-        const newValue = value.replace(/[^\w]/g, '').substring(0, 4);
+        const newValue = value.replace(/[^0-9]/g, '').substring(0, 6);
         newState.value = newValue;
         return newState;        
     }

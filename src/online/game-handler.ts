@@ -129,6 +129,10 @@ export class GameHandler {
         
             case `end`:
                 // TODO: handle game over
+                const { w } = msg;
+                this.Gaming = false;
+                getGameScene().gameover(w);
+                OnlineSessionHub.get.Room?.SocketClient?.unready();
                 break;
         }
     }
@@ -136,9 +140,6 @@ export class GameHandler {
     public evaluatePause(state: AbstractState, coord: coord): boolean {
         if (state.Goal.x === coord.x && state.Goal.y === coord.y) {
             const room = OnlineSessionHub.get.Room;
-            if (room?.LocalState === state) {
-                room.SocketClient?.end();
-            }
             return true;
         }
         return false;

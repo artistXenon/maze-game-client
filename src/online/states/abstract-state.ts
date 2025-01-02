@@ -1,6 +1,8 @@
 import { coord } from "../../helper/types";
 import { LocalConfig } from "../../states/local-config";
 import { GameHandler } from "../game-handler";
+import { OnlineSessionHub } from "../session-hub";
+import LocalState from "./local-state";
 
 export default abstract class AbstractState {
     private isMom: boolean;
@@ -64,10 +66,19 @@ export default abstract class AbstractState {
             y > this.to.y ? `down` :
             x < this.to.x ? `left` :
             x > this.to.x ? `right` : undefined;
+        let stop = false;
+        if (gameHandler.evaluatePause(this, startingCoord)) {
+            stop = true;
+            if (this === OnlineSessionHub.get.Room?.LocalState) {
+                OnlineSessionHub.get.Room?.SocketClient?.end();
+            }
+        }
         if (
-            open !== 2 || from === undefined || 
-            gameHandler.evaluatePause(this, startingCoord)
+            open !== 2 || from === undefined
         ) {
+            stop = true;
+        }
+        if (stop) {
             this.from.x = this.to.x;
             this.from.y = this.to.y;
             this.since = performance.now();
@@ -80,32 +91,32 @@ export default abstract class AbstractState {
                 endCoord.y -= 1;
                 walls = gameHandler.Maze.getSurroundingWalls(endCoord.x, endCoord.y);
             } while (
-                !walls[0] && walls[2] && walls[3] &&
-                !gameHandler.evaluatePause(this, endCoord)
+                !gameHandler.evaluatePause(this, endCoord) && 
+                !walls[0] && walls[2] && walls[3]
             );
         } else if (!walls[1] && from !== `down`) {
             do {
                 endCoord.y += 1;
                 walls = gameHandler.Maze.getSurroundingWalls(endCoord.x, endCoord.y);
             } while (
-                !walls[1] && walls[2] && walls[3] &&
-                !gameHandler.evaluatePause(this, endCoord)
+                !gameHandler.evaluatePause(this, endCoord) && 
+                !walls[1] && walls[2] && walls[3]
             );
         } else if (!walls[2] && from !== `left`) {
             do {
                 endCoord.x -= 1;
                 walls = gameHandler.Maze.getSurroundingWalls(endCoord.x, endCoord.y);
             } while (
-                walls[0] && walls[1] && !walls[2] &&
-                !gameHandler.evaluatePause(this, endCoord)
+                !gameHandler.evaluatePause(this, endCoord) && 
+                walls[0] && walls[1] && !walls[2]
             );
         } else if (!walls[3] && from !== `right`) {
             do {
                 endCoord.x += 1;
                 walls = gameHandler.Maze.getSurroundingWalls(endCoord.x, endCoord.y);
             } while (
-                walls[0] && walls[1] && !walls[3] &&
-                !gameHandler.evaluatePause(this, endCoord)
+                !gameHandler.evaluatePause(this, endCoord) && 
+                walls[0] && walls[1] && !walls[3]
             );
         }
         this.since = performance.now();

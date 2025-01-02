@@ -1,9 +1,9 @@
-import { LocalConfig } from "../states/local-config";
-import { LocalClient } from "./states/local-client";
 import { OnlineSessionHub } from "./session-hub";
+import { LocalConfig } from "../states/local-config";
+import { LocalClient } from "./states";
 
 export interface ISocketListener {
-    onOpen(): void;
+    onOpen(websocket: WebSocket): void;
     onUpdate(type: string, args?: any): void;
     onGameMessage(args: any): void;
     onClose(reason: any): void;
@@ -13,10 +13,9 @@ export class SocketClient {
     public static readonly HOST = `ws://creative.jaewon.pro:9883`;
 
     public static create(roomId: string, localClient: LocalClient, socketListener: ISocketListener) {
-        const [_, s, r] = localClient.cookSecret(`:socket_join:`);
 
         const websocket = new WebSocket(SocketClient.HOST + '/' + roomId + '/' + localClient.Id);
-        websocket.addEventListener('open', () => websocket.send(JSON.stringify({ t: `hi`, r, s })));    
+        websocket.addEventListener('open', () => socketListener.onOpen(websocket));    
 
         return new SocketClient(websocket, socketListener);    
     }
@@ -89,7 +88,7 @@ export class SocketClient {
                     return;
                 }
                 if (json.t === `balls`) {
-                    if ((this.gameReady & 0b11111) !== 0b01111 || room.LocalState.IsMom) return;
+                    if ((this.gameReady & 0b10101) !== 0b00101 || room.LocalState.IsMom) return;
                     const remote = room.RemoteState;
                     if (remote === undefined) throw new Error(`SocketClient#onMessage$balls: undefined remote.`);
                     const { p, c, pi } = json;
@@ -127,10 +126,15 @@ export class SocketClient {
         }, 1000);
     }
 
+    public unready() {
+        this.gameReady = 0b00011;
+    }
+
     public end() {
         // TODO: match over
         // TODO: verified end will be handled after response.
         // TODO: so here, we just pause all inputs and wait
+        console.log(`sent end`);
         this.send({
             t: `end`, 
             n: performance.now()

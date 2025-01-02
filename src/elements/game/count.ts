@@ -8,8 +8,11 @@ export default class CountSprite extends Sprite {
 
     private countTo: number = 0;
 
+    private font: string;
+
     constructor() {
         super({ X: 900, Y: 500 });
+        this.font = getEngine().getFontBuilder("GowunBatang")!.setSize(`50px`).toString();
     }
 
     public get Time() {
@@ -18,6 +21,7 @@ export default class CountSprite extends Sprite {
 
     onDraw(context: CanvasRenderingContext2D, delay: number): void {
         // TODO: pretty~
+        if (!this.counting) return;
         const diff = this.Time;
         const currentFrame = 
             diff > CountSprite.frame_unit * 3 ? `Ready` :
@@ -26,12 +30,12 @@ export default class CountSprite extends Sprite {
             diff > 0 ? `1` : `GO`;
         context.fillStyle = `white`;
         // TODO: 
-        context.font = getEngine().getFontBuilder("GowunBatang")!.setSize(`50px`).toString();
+        context.font = this.font;
         context.fillText(currentFrame, 0, 0);
-        if (this.counting && currentFrame === `GO`) {
-            this.counting = false;
+        if (currentFrame === `GO`) {
             setTimeout(() => {
-                this.setParent(null);
+                // this.setParent(null);
+                this.counting = false;
             }, 1000);
         }
     }
